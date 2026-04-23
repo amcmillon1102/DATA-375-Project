@@ -1,0 +1,99 @@
+---
+title: "treetools"
+author: "Alexander Shah"
+format: html
+---
+
+## Setup
+
+```{r}
+#| include: false
+install.packages("rlang", repos = "https://cloud.r-project.org")
+install.packages("dplR", repos = "https://cloud.r-project.org")
+install.packages("tidyr", repos = "https://cloud.r-project.org")
+install.packages("dplyr", repos = "https://cloud.r-project.org")
+library(dplR)
+library(tidyr)
+library(dplyr)
+```
+
+## Functions
+
+```{r}
+#' Read a Ring Width Library (RWL) file
+#'
+#' @param path Path to the RWL file
+#' @return A data frame with samples as columns and years as rows
+#' @export
+read_rwl <- function(path) {
+  read.rwl(path)
+}
+
+#' Convert a RWL data frame to tidy format
+#'
+#' @param rwl_df A data frame as returned by read_rwl()
+#' @return A tidy data frame with columns sample_id, year, and ring_width
+#' @export
+tidy_rwl <- function(rwl_df) {
+  # The row names of the RWL data frame are the years,
+  # pull them out as a column
+  rwl_df$year <- as.integer(rownames(rwl_df))
+  # Pivot from wide to long format
+  tidy <- pivot_longer(rwl_df, cols = -year, names_to = "sample_id", values_to = "ring_width")
+  # Convert back to a plain data frame
+  tidy <- as.data.frame(tidy)
+  # Drop rows where ring width is NA
+  tidy <- tidy[!is.na(tidy$ring_width), ]
+  tidy
+}
+
+#' Export a tidy tree-ring data frame to CSV
+#'
+#' @param data A tidy data frame as returned by tidy_rwl()
+#' @param path Output file path ending in .csv
+#' @return Invisibly returns the file path
+#' @export
+export_rwl <- function(data, path) {
+  write.csv(data, path, row.names = FALSE)
+  invisible(path)
+}
+
+#' Flag statistical outliers as potential cross-dating errors
+#'
+#' @param data A tidy data frame as returned by tidy_rwl()
+#' @return A data frame of flagged rows with an added issue column
+#' @export
+detect_crossdate_errors <- function(data) {
+  # Calculate Z-score for each measurement within its sample
+  z_scores <- ave(data$ring_width, data$sample_id, FUN = function(x) {
+    (x - mean(x)) / sd(x)
+  })
+  # Flag rows where Z-score exceeds 3
+  outliers <- data[abs(z_scores) > 3, ]
+  outliers$issue <- "Statistical outlier (Z > 3)"
+  outliers
+}
+```
+
+## Test
+
+```{r}
+# Load a sample dataset built into dplR
+data(gp.rwl, package = "dplR")
+
+# Run the pipeline
+tidy_data <- tidy_rwl(gp.rwl)
+
+# Check output
+head(tidy_data)
+```
+
+```{r}
+# Export to CSV
+export_rwl(tidy_data, "cores_output.csv")
+```
+
+```{r}
+# Test error detection on tidy data
+detect_crossdate_errors(tidy_data)
+```
