@@ -20,12 +20,20 @@ library(dplyr)
 ## Functions
 
 ```{r}
-# Reads a RWL file and returns a data frame
+#' Read a Ring Width Library (RWL) file
+#'
+#' @param path Path to the RWL file
+#' @return A data frame with samples as columns and years as rows
+#' @export
 read_rwl <- function(path) {
   read.rwl(path)
 }
 
-# Reshapes the wide data frame into a long tidy format
+#' Convert a RWL data frame to tidy format
+#'
+#' @param rwl_df A data frame as returned by read_rwl()
+#' @return A tidy data frame with columns sample_id, year, and ring_width
+#' @export
 tidy_rwl <- function(rwl_df) {
   # The row names of the RWL data frame are the years,
   # pull them out as a column
@@ -39,13 +47,22 @@ tidy_rwl <- function(rwl_df) {
   tidy
 }
 
-# Saves the tidy data frame to a CSV file
+#' Export a tidy tree-ring data frame to CSV
+#'
+#' @param data A tidy data frame as returned by tidy_rwl()
+#' @param path Output file path ending in .csv
+#' @return Invisibly returns the file path
+#' @export
 export_rwl <- function(data, path) {
   write.csv(data, path, row.names = FALSE)
   invisible(path)
 }
 
-# Flags statistical outliers (Z-score > 3) as potential cross-dating errors
+#' Flag statistical outliers as potential cross-dating errors
+#'
+#' @param data A tidy data frame as returned by tidy_rwl()
+#' @return A data frame of flagged rows with an added issue column
+#' @export
 detect_crossdate_errors <- function(data) {
   # Calculate Z-score for each measurement within its sample
   z_scores <- ave(data$ring_width, data$sample_id, FUN = function(x) {
