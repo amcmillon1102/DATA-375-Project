@@ -1,0 +1,112 @@
+---
+title: "treetools part one"
+author: "Alexander Shah"
+format: html
+---
+
+## Introduction
+
+Most of the work in tree-ring research happens before any analysis: reading files, cleaning formats, reshaping data. treetools handles that part. This vignette walks through reading raw RWL data into R, turning it into something usable, and saving it to CSV.
+
+Every function in the package passes the same data frame around: three columns (sample_id, year, and ring_width in mm). Output from one function drops straight into the next.
+
+---
+
+## Setup
+
+```{r}
+#| include: false
+install.packages("rlang", repos = "https://cloud.r-project.org")
+install.packages("dplR", repos = "https://cloud.r-project.org")
+install.packages("tidyr", repos = "https://cloud.r-project.org")
+install.packages("dplyr", repos = "https://cloud.r-project.org")
+library(dplR)
+library(tidyr)
+library(dplyr)
+```
+
+---
+
+## Step 1: Load the Data with `read_rwl()`
+
+RWL is the standard file format for tree-ring measurements. read_rwl() reads one and returns a data frame (samples as columns, years as rows). For this walkthrough we use gp.rwl, a dataset bundled with dplR, instead of a file on disk.
+
+```{r}
+#' @export
+read_rwl <- function(path) {
+  read.rwl(path)
+}
+```
+
+```{r}
+# Load the sample dataset
+data(gp.rwl, package = "dplR")
+
+# Take a look at the raw format
+gp.rwl[150:155, 1:5]
+```
+
+The raw format is wide: one column per sample, years as row names. Filtering or plotting it directly is a pain, which is why it needs reshaping.
+
+---
+
+## Step 2: Tidy the Data with `tidy_rwl()`
+
+tidy_rwl() takes that wide data frame and pivots it long: one row per measurement. From there you can filter by sample, group by year, or pipe it into ggplot without any extra work.
+
+```{r}
+#' @export
+tidy_rwl <- function(rwl_df) {
+  # The row names of the RWL data frame are the years,
+  # pull them out as a column
+  rwl_df$year <- as.integer(rownames(rwl_df))
+  # Pivot from wide to long format
+  tidy <- pivot_longer(rwl_df, cols = -year, names_to = "sample_id", values_to = "ring_width")
+  # Convert back to a plain data frame
+  tidy <- as.data.frame(tidy)
+  # Drop rows where ring width is NA
+  tidy <- tidy[!is.na(tidy$ring_width), ]
+  tidy
+}
+```
+
+```{r}
+# Convert to tidy format
+tidy_data <- tidy_rwl(gp.rwl)
+
+# Check the output
+head(tidy_data)
+```
+
+One row per measurement, three columns. That's it. Everything else in the package takes this as input.
+
+---
+
+## Step 3: Export the Data with `export_rwl()`
+
+`export_rwl()` saves the tidy data frame to a CSV. Useful for sharing with collaborators or loading into Excel or Python.
+
+```{r}
+#' @export
+export_rwl <- function(data, path) {
+  write.csv(data, path, row.names = FALSE)
+  invisible(path)
+}
+```
+
+```{r}
+# Save the tidy data to a CSV file
+export_rwl(tidy_data, "treetools_output.csv")
+
+# Confirm it was saved by reading it back in
+saved <- read.csv("treetools_output.csv")
+head(saved)
+```
+
+Same three columns written to a plain CSV. Opens in Excel, Python, anything.
+
+---
+
+## Summary
+
+Read it in, tidy it, save it. The data frame you end up with is what the error detection and visualization functions expect.
