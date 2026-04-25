@@ -78,11 +78,43 @@ tidy_data <- tidy_rwl(gp.rwl)
 head(tidy_data)
 ```
 
-One row per measurement, three columns. That's it. Everything else in the package takes this as input.
+One row per measurement, three columns. Everything else in the package takes this as input.
+
+---
+## Step 3: Detect Cross Dating Errors with detect_crossdate_errors()
+
+detect_crossdate_errors() takes the now tidy data and analyzes to look for cross dating errors using certain criteria including checking for negative widths, checking for missing rings, looking for zeros, and checking if there is a statistical outlier by looking for standard deviations greater than three. It then creates a summary report with the information of the tree and tree ring and it's error category.
+
+```{r}
+detect_crossdate_errors <- function(data) {
+  
+  # Check for negative widths
+  physical_errors <- data %>%
+    dplyr::filter(ring_width < 0) %>%
+    dplyr::mutate(issue = "Negative growth detected")
+
+  # Check for missing rings/zeros
+  missing_rings <- data %>%
+    dplyr::filter(ring_width == 0) %>%
+    dplyr::mutate(issue = "Potential missing ring (zero width)")
+
+  # Statistical outlier check (width > 3 SD)
+  outliers <- data %>%
+    dplyr::group_by(sample_id) %>%
+    dplyr::mutate(z_score = (ring_width - mean(ring_width)) / sd(ring_width)) %>%
+    dplyr::filter(abs(z_score) > 3) %>%
+    dplyr::mutate(issue = "Statistical outlier (Z > 3)")
+
+  # Combine all checks into one summary report
+  flagged_summary <- dplyr::bind_rows(physical_errors, missing_rings, outliers)
+  return(flagged_summary)}
+```
+
+This allows dendrochronologists to quickly check if there were errors when a machine or someone else was crossdating instead of tediously going individualy through hundreds or thousands of rings. 
 
 ---
 
-## Step 3: Export the Data with `export_rwl()`
+## Step 4: Export the Data with `export_rwl()`
 
 `export_rwl()` saves the tidy data frame to a CSV. Useful for sharing with collaborators or loading into Excel or Python.
 
