@@ -1,0 +1,49 @@
+---
+title: "introduction-to-treetools"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{introduction-to-treetools}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+Goal 2: Detect Cross Dating Errors 
+
+```{r}
+#' @param data A tidy tree ring data frame containing columns for 'year', 'sample_id', and 'ring_width'.
+#' @return A summary table of flagged samples with cross dating errors and the specific reason they were flagged.
+#' @export
+# To work: needs a tidy data fram with columns year, sample_id, and ring_width created by goal 1
+# Column names can change depending on goal 1 implementation
+
+detect_crossdate_errors <- function(data) {
+  
+  # Check for negative widths
+  physical_errors <- data %>%
+    dplyr::filter(ring_width < 0) %>%
+    dplyr::mutate(issue = "Negative growth detected")
+
+  # Check for missing rings/zeros
+  missing_rings <- data %>%
+    dplyr::filter(ring_width == 0) %>%
+    dplyr::mutate(issue = "Potential missing ring (zero width)")
+
+  # Statistical outlier check (width > 3 SD)
+  outliers <- data %>%
+    dplyr::group_by(sample_id) %>%
+    dplyr::mutate(z_score = (ring_width - mean(ring_width)) / sd(ring_width)) %>%
+    dplyr::filter(abs(z_score) > 3) %>%
+    dplyr::mutate(issue = "Statistical outlier (Z > 3)")
+
+  # Combine all checks into one summary report
+  flagged_summary <- dplyr::bind_rows(physical_errors, missing_rings, outliers)
+  return(flagged_summary)}
+```
