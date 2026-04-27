@@ -81,7 +81,32 @@ head(tidy_data)
 One row per measurement, three columns. Everything else in the package takes this as input.
 
 ---
-## Step 3: Detect Cross Dating Errors with detect_crossdate_errors()
+
+## Step 3: Export the Data with `export_rwl()`
+
+`export_rwl()` saves the tidy data frame to a CSV. Useful for sharing with collaborators or loading into Excel or Python.
+
+```{r}
+#' @export
+export_rwl <- function(data, path) {
+  write.csv(data, path, row.names = FALSE)
+  invisible(path)
+}
+```
+
+```{r}
+# Save the tidy data to a CSV file
+export_rwl(tidy_data, "treetools_output.csv")
+
+# Confirm it was saved by reading it back in
+saved <- read.csv("treetools_output.csv")
+head(saved)
+```
+
+Same three columns written to a plain CSV. Opens in Excel, Python, anything.
+
+---
+## Step 4: Detect Cross Dating Errors with detect_crossdate_errors()
 
 detect_crossdate_errors() takes the now tidy data and analyzes to look for cross dating errors using certain criteria including checking for negative widths, checking for missing rings, looking for zeros, and checking if there is a statistical outlier by looking for standard deviations greater than three. It then creates a summary report with the information of the tree and tree ring and it's error category.
 
@@ -113,32 +138,10 @@ detect_crossdate_errors <- function(data) {
 This allows dendrochronologists to quickly check if there were errors when a machine or someone else was crossdating instead of tediously going individualy through hundreds or thousands of rings. 
 
 ---
+## Step 5: Plot a tree-ring chronology with plot_chronology() and map tree-ring sample collection sites with map_sites()
 
-## Step 4: Export the Data with `export_rwl()`
-
-`export_rwl()` saves the tidy data frame to a CSV. Useful for sharing with collaborators or loading into Excel or Python.
-
-```{r}
-#' @export
-export_rwl <- function(data, path) {
-  write.csv(data, path, row.names = FALSE)
-  invisible(path)
-}
-```
-
-```{r}
-# Save the tidy data to a CSV file
-export_rwl(tidy_data, "treetools_output.csv")
-
-# Confirm it was saved by reading it back in
-saved <- read.csv("treetools_output.csv")
-head(saved)
-```
-
-Same three columns written to a plain CSV. Opens in Excel, Python, anything.
 
 ---
-
 ## Summary
+Tree tools allows dendrochronologists and those studying tree ring and climate research to streamline the data wrangling process in research to get to analysis faster. This is done by making rwl files tidy and transferrable to csv, detecting cross dating errors, and creating visualizations of tree ring chronology and mapping tree ring sample collections.
 
-Read it in, tidy it, save it. The data frame you end up with is what the error detection and visualization functions expect.
