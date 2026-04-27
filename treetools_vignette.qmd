@@ -6,7 +6,7 @@ format: html
 
 ## Introduction
 
-Most of the work in tree-ring research happens before any analysis: reading files, cleaning formats, reshaping data. treetools handles that part. This vignette walks through reading raw RWL data into R, turning it into something usable, and saving it to CSV.
+Most of the work in tree-ring research happens before any analysis: reading files, cleaning formats, reshaping data. treetools handles that part. This vignette walks through reading raw RWL data into R, turning it into something usable, saving it to CSV, and then using this clean data to detect cross dating errors and create helpful visualizations of the data.
 
 Every function in the package passes the same data frame around: three columns (sample_id, year, and ring_width in mm). Output from one function drops straight into the next.
 
