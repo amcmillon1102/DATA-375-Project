@@ -138,9 +138,67 @@ detect_crossdate_errors <- function(data) {
 This allows dendrochronologists to quickly check if there were errors when a machine or someone else was crossdating instead of tediously going individualy through hundreds or thousands of rings. 
 
 ---
-## Step 5: Plot a tree-ring chronology with plot_chronology() and map tree-ring sample collection sites with map_sites()
+## Step 5: Visualize Data with `plot_chronology()` and `map_sites()`
 
+With clean, validated data in hand, treetools provides two functions for visual inspection: one for the temporal view and one for the spatial view.
 
+---
+  
+  ### `plot_chronology()`
+  
+  `plot_chronology()` takes the tidy data frame and plots ring width over time for every sample. Each sample gets its own coloured line, making it easy to spot diverging growth patterns or shared climate signals across cores.
+
+```{r}
+#' @export
+plot_chronology <- function(data, title = "Tree-Ring Chronology") {
+  ggplot(data, aes(x = year, y = ring_width, colour = sample_id, group = sample_id)) +
+    geom_line(alpha = 0.6) +
+    labs(title = title, x = "Year", y = "Ring Width (mm)", colour = "Sample") +
+    theme_bw()
+}
+```
+
+```{r}
+# Plot all samples from the tidy data
+plot_chronology(tidy_data)
+```
+
+Each line is one core. Dips and peaks that appear across multiple samples at the same year point to shared environmental events — drought years, cold summers, or disturbance events.
+
+---
+  
+  ### `map_sites()`
+  
+  `map_sites()` plots collection site coordinates on a world basemap. It takes a data frame with three columns — `site_id`, `longitude`, and `latitude` — and auto-zooms to fit all sites.
+
+```{r}
+#' @export
+map_sites <- function(sites) {
+  world <- map_data("world")
+  ggplot() +
+    geom_polygon(data = world, aes(x = long, y = lat, group = group),
+                 fill = "#EDEDE9", colour = "#AAAAAA") +
+    geom_point(data = sites, aes(x = longitude, y = latitude),
+               colour = "#2C7BB6", size = 3) +
+    geom_text(data = sites, aes(x = longitude, y = latitude, label = site_id),
+              vjust = -0.8, size = 3) +
+    labs(x = "Longitude", y = "Latitude") +
+    theme_bw()
+}
+```
+
+```{r}
+# Build a sites data frame and map it
+sites_demo <- data.frame(
+  site_id   = c("CAM", "PYR", "MET"),
+  longitude = c(-118.2, -119.8, -116.5),
+  latitude  = c(37.5, 38.1, 36.9)
+)
+
+map_sites(sites_demo)
+```
+
+Geographic context matters in dendrochronology — sites at different elevations or aspects can show very different growth responses to the same climate event. `map_sites()` makes it easy to see where your samples came from at a glance.
 ---
 ## Summary
 Tree tools allows dendrochronologists and those studying tree ring and climate research to streamline the data wrangling process in research to get to analysis faster. This is done by making rwl files tidy and transferrable to csv, detecting cross dating errors, and creating visualizations of tree ring chronology and mapping tree ring sample collections.
